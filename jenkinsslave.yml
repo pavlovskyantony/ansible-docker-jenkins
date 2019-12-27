@@ -1,0 +1,6 @@
+- hosts: jenkinsslave
+
+  roles:
+    - role: jenkins-slave
+      tags:
+        - jenkins-slave

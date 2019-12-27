@@ -33,6 +33,12 @@ Vagrant.configure("2") do |config|
       vb2.name = "jenkinsslave"
       vb2.memory = "4096"
       end
-    end
+    machine.vm.provision "ansible1" do |ansible1|
+      ansible1.playbook = "jenkinsslave.yml"
+      ansible1.limit = "all"
+      ansible1.inventory_path = "inventory"
+      ansible1.verbose = "v"
+      end
+  end
 
 end

@@ -1,0 +1,15 @@
+---
+# tasks file for jenkins-slave
+- name: "Install java OpenJDK"
+  yum:
+    name: java
+    state: latest
+
+- name: "Create user Jenkins"
+  user:
+    name: jenkins
+    comment: Jenkins slave account
+    uid: "1040"
+    generate_ssh_key: yes
+    ssh_key_bits: 4096
+    ssh_key_file: .ssh/id_rsa
