@@ -1,0 +1,28 @@
+# Main playbook
+- hosts: docker
+
+  roles:
+    - role: docker-preinstall
+      tags:
+        - preinstall
+
+    - role: docker-install
+      vars:
+        - docker_package: docker-ce
+      tags:
+        - install
+
+    - role: user
+      vars:
+        username: root
+        tasks_:
+          - add_user
+      tags:
+        - user
+
+    - role: jenkins
+      vars:
+        - jvolume: jenkins-volume
+        - bitvolume: bitbucket-volume
+      tags: 
+        - jenkins_bitbucket

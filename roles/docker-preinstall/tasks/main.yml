@@ -1,0 +1,35 @@
+---
+# tasks file for docker-preinstall
+
+- name: "Create facts directory"
+  file:
+    path: "/etc/ansible/facts.d"
+    state: "directory"
+  become: yes
+
+- name: "Install yum dependency"
+  yum:
+    name: "{{ item }}"
+    state: latest
+  loop:
+    - yum-utils
+    - device-mapper-persistent-data
+    - lvm2
+    - python-docker-py
+  become: yes
+
+- name: "Add Docker repo"
+  get_url:
+    url: https://download.docker.com/linux/centos/docker-ce.repo
+    dest: /etc/yum.repos.d/docer-ce.repo
+  become: yes
+
+- name: "Enable Docker Edge repos"
+  ini_file:
+    dest: /etc/yum.repos.d/docer-ce.repo
+    section: "{{ item }}"
+    option: enabled
+  become: yes
+  loop:
+    - docker-ce-test
+    - docker-ce-edge

@@ -1,0 +1,41 @@
+# Install Jenkins bitBucket trough shell
+
+############## Jenckins ############
+- name: "Check Jenkins Installation"
+  shell: 'curl 192.168.56.101:50000 | grep Jenkins-Version'
+  register: jenkins_status
+  changed_when: False
+
+- name: "Check folder existance for Jenkins volume "
+  stat:
+    path: /var/lib/docker/volumes/{{ jvolume }}
+  register: jenkins-folder
+
+- name: "Create jenkins volume"
+  shell: docker volume create --name {{ jvolume }}
+  when: jenkins-folder.stat.isdir is defined and jenkins-folder.stat.isdir
+  
+- name: "Install jenkins"
+  shell: docker run -p 8080:8080 -v {{ jvolume }}:/var/jenkins_home --name=jenkins -d jenkins/jenkins:lts
+  when: jenkins_status is not defined
+
+
+############### bitBucket ##########
+
+- name: "Check bitBucket Installation"
+  shell: 'curl -I 192.168.56.101:7990'
+  register: port7990_status
+  changed_when: False
+
+- name: "Check folder existance for bitbucket volume "
+  stat:
+   path: /var/lib/docker/volumes/{{ bitvolume }}
+  register: bitbucket-folder
+
+- name: "Create bitBucket volume"
+  shell: docker volume create --name {{ bitvolume }}
+  when: bitbucket-folder.stat.isdir is defined and bitbucket-folder.stat.isdir
+
+- name: "Install bitBucket"
+  shell: docker run -v {{ bitvolume }}:/var/atlassian/application-data/bitbucket --name="bitbucket" -d -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
+  when: port7990_status is not defined

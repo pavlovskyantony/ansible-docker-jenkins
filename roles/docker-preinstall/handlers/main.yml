@@ -1,0 +1,9 @@
+---
+# handlers file for docker-preinstall
+- name: docker facts
+  copy:
+    content: >
+      {
+        "HTTPD version": "{{ httpd_version }}"
+      }
+    dest: /etc/ansible/facts.d/docker.fact

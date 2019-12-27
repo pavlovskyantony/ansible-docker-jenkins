@@ -1,0 +1,19 @@
+---
+# handlers file for docker-install
+- name: "Check docker version"
+  shell: docker -v | awk '{print $3}' | sed -e "s/,//g"
+  register: docker_version
+  changed_when: False
+  failed_when: docker_version.stdout == ' '
+  listen: docker facts
+
+- name: docker facts
+  copy:
+    content: >
+      {
+        "Docker version: ":{{ docker_version.stdout }}"
+        "Time of Docker installation": "{{ ansible_date_time.date }}"
+      }
+    dest: /etc/ansible/facts.d/docker.fact
+  listen: docker facts
+  become: yes

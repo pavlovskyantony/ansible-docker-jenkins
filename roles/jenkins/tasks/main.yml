@@ -1,0 +1,54 @@
+---
+# tasks file for jenkins and bitBucket
+
+############## Jenkins ###############
+- name: "Check Jenkins Installation"
+  url: 
+    url: http://192.168.56.101:50000
+    return_content: yes
+  register: jenkins_status
+  failed_when: "'Jenkins-Version' not in jenkins_status.content "
+
+- name: "Create a Jenkins volume"
+  docker_volume:
+    name: "{{ jvolume }}"
+
+- name: "Create a Jenkins container"
+  docker_container:
+    name: jenkins
+    image: jenkins/jenkins:lts
+    state: started
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes: "{{ jvolume }}":/var/jenkins_home
+  when: jenkins_status is not defined
+
+################ bitBucket ##################
+
+- name: "Check bitBucket Installation"
+  url: 
+    url: http://192.168.56.101:7990
+    return_content: yes
+  register: bitbucket_status
+  failed_when: "'X-ASEN' not in bitbucket_status.content "
+
+- name: "Create a bitBucket volume"
+  docker_volume:
+    name: "{{ bitvolume }}"
+
+- name: "Create a bitBucket container"
+  docker_container:
+    name: bitbucketserver
+    image: atlassian/bitbucket-server
+    state: started
+    ports:
+      - "7990:7990"
+      - "7999:7999"
+    volumes:
+      - "{{ bitvolume }}":/var/atlassian/application-data/bitbucket
+  when: bitbucket_status is not defined
+  
+
+
+

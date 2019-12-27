@@ -1,0 +1,6 @@
+#- name: "Add authorized keys"
+#  authorized_key:
+#    user: "{{ username }}"
+#    state: present
+#    key: "{{ lookup('file', '/keys/ansible.pub') }}"
+#  with_fileglob: /keys/ansible.pub
