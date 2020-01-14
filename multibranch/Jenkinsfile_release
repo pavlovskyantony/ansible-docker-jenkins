@@ -1,0 +1,25 @@
+def label = "docker-jenkins-${UUID.randomUUID().toString()}"
+def label1 = "centos-jenkins-${UUID.randomUUID().toString()}"
+node {
+    stage('SCM git checkout') {
+        git branch: 'release/release1', credentialsId: 'bc1e3a67-986e-460c-9699-651ea9b9b4a3', url: 'http://192.168.56.101:7990/scm/myb/multibranch.git'
+    }
+    stage('Maven build package') {
+        sh "echo 'Maven Build stage' "
+    }
+	stage('Maven testing') {
+        parallel(
+                'pre-integration': {
+                    sh 'echo "mvn pre-integration-test"'
+                },
+                'integration-test': {
+                    withMaven(maven: 'M3') {
+                        sh "mvn -f helloworld-project/helloworld-ws/pom.xml integration-test"
+                    }
+                },
+                'post-integration-test': {
+                    sh 'echo "mvn post-integration-test"'
+                }
+        )
+    }
+}

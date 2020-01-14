@@ -1,0 +1,83 @@
+def label = "docker-jenkins-${UUID.randomUUID().toString()}"
+def label1 = "centos-jenkins-${UUID.randomUUID().toString()}"
+node {
+    stage('SCM git checkout') {
+        git branch: 'master', credentialsId: 'bc1e3a67-986e-460c-9699-651ea9b9b4a3', url: 'http://192.168.56.101:7990/scm/myb/multibranch.git'
+        checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'bc1e3a67-986e-460c-9699-651ea9b9b4a3', url: 'http://192.168.56.101:7990/scm/myb/multibranch.git']]])
+    }
+    stage('Maven build package') {
+        withMaven(maven: 'M3') {
+            sh "mvn -f helloworld-project/helloworld-ws/pom.xml clean install"
+            sh "cp helloworld-project/helloworld-ws/target/*.war ./helloworld-ws.war"
+        }
+    }
+    stage('Maven testing') {
+        withMaven(maven: 'M3') {
+            sh "mvn -f helloworld-project/helloworld-ws/pom.xml integration-test"
+        }
+    }
+    stage('Create Docker image with built WAR file') {
+            sh """
+            echo 'FROM tomcat:8.0' > Dockerfile
+            echo 'COPY helloworld-ws.war /usr/local/tomcat/webapps/' >> Dockerfile
+            """
+            docker.build('helloworld-ws:rc-$BUILD_NUMBER')
+            echo "Docker image is built"
+
+    }
+    stage('Asking for manual approval') {
+        stage = env.STAGE_NAME
+        timeout(time: 2, unit: "MINUTES") { input message: "Do you want deploy this image", ok: 'yes' }
+    }
+    stage('Run custom Docker image') {
+        docker.image('helloworld-ws:rc-$BUILD_NUMBER').run('-p 8080:8080') {
+    }
+    
+    /*
+    stage('Build Docker Image') {
+        podTemplate(label: label,
+                containers: [
+                        containerTemplate(name: 'jnlp', image: 'jenkins/jnlp-slave:alpine'),
+                        containerTemplate(name: 'docker', image: 'docker', command: 'cat', ttyEnabled: true),
+                ],
+                volumes: [
+                        hostPathVolume(hostPath: '/var/run/docker.sock', mountPath: '/var/run/docker.sock'),
+                ]
+        ) {
+            node(label) {
+                container('docker') {
+                    sh """
+                        docker build -t helloworld-ws:"${BUILD_NUMBER}" .
+                        docker tag helloworld-ws:"${BUILD_NUMBER}" nexus-dock.k8s.playpit.by:80/helloworld-rc:"${BUILD_NUMBER}"
+                        docker login -u admim -p pass nexus-dock.k8s.playpit.by:80
+                       """
+                }
+            }
+        }
+    }
+    stage ('Deploy my image to k8s') {
+        podTemplate(label: label1,
+                containers: [
+                        containerTemplate(name: 'jnlp', image: 'jenkins/jnlp-slave:alpine'),
+                        containerTemplate(name: 'centos', image: 'centos', command: 'cat', ttyEnabled: true),
+                ],
+                volumes: [
+                        hostPathVolume(hostPath: '/var/run/docker.sock', mountPath: '/var/run/docker.sock'),
+                ]
+        ) {
+            node(label1) {
+                    container('centos') {
+                        sh """
+                           curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
+                           chmod +x ./kubectl
+                           mv ./kubectl /usr/local/bin/kubectl
+                           kubectl apply -f https://raw.githubusercontent.com/MNT-Lab/p193e-module/apavlovsky/my_image_deploy.yml
+                           kubectl set image deployment tomcat -n ashkraba tomcat=nexus-dock.k8s.playpit.by:80/helloworld-rc:"$BUILD_NUMBER"
+                           """
+                    }
+                }
+            }
+        }
+    }
+*/
+}
